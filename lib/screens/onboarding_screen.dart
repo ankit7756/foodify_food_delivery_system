@@ -112,7 +112,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: Text(
                   _index == pages.length - 1 ? "Get Started" : "Next",
                   style: const TextStyle(
-                    color: Colors.white, // white text
+                    color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
