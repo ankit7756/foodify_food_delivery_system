@@ -26,7 +26,7 @@ class _SplashScreenState extends State<SplashScreen>
       end: 1.05,
     ).animate(CurvedAnimation(parent: _anim, curve: Curves.easeOutBack));
     _anim.forward();
-    Future.delayed(const Duration(seconds: 5), () {
+    Future.delayed(const Duration(seconds: 4), () {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const OnboardingScreen()),
