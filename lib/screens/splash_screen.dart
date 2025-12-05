@@ -93,7 +93,6 @@ class _SplashScreenState extends State<SplashScreen>
                 style: TextStyle(color: Colors.white70),
               ),
               const SizedBox(height: 28),
-              // subtle loader bar
               Container(
                 width: 80,
                 height: 6,
