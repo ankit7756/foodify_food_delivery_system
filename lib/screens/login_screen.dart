@@ -38,7 +38,6 @@ class _LoginScreenState extends State<LoginScreen> {
         passwordError = "Password cannot be empty";
       }
 
-      // If any errors exist → DO NOT navigate
       if (emailError != null || passwordError != null) return;
 
       Navigator.pushReplacement(
