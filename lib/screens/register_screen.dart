@@ -3,7 +3,6 @@ import '../widgets/my_textfield.dart';
 import '../widgets/my_button.dart';
 import '../theme/app_colors.dart';
 import 'login_screen.dart';
-import 'home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
