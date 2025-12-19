@@ -3,7 +3,7 @@ import '../widgets/my_textfield.dart';
 import '../widgets/my_button.dart';
 import '../theme/app_colors.dart';
 import 'register_screen.dart';
-import 'home_screen.dart';
+import 'dashboard/bottom_navigation_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -42,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => const BottomNavigationScreen()),
       );
     });
   }
