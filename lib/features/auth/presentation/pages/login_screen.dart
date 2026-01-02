@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:foodify_food_delivery_system/features/dashboard/presentation/pages/dashboard_screen.dart';
 import '../widgets/my_textfield.dart';
 import '../widgets/my_button.dart';
-import '../theme/app_colors.dart';
+import '../../../../app/theme/app_colors.dart';
 import 'register_screen.dart';
-import 'dashboard/bottom_navigation_screen.dart';
+import '../../domain/entities/user_entity.dart'; // NEW
+import '../../data/datasources/local/auth_local_datasource.dart'; // NEW
+import '../../data/repositories/auth_repository_impl.dart'; // NEW
+import '../../domain/usecases/auth_usecases.dart';
+
+final authLocalDataSource = AuthLocalDataSource(); // NEW
+final authRepository = AuthRepositoryImpl(
+  localDataSource: authLocalDataSource,
+); // NEW
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,32 +28,71 @@ class _LoginScreenState extends State<LoginScreen> {
   String? emailError;
   String? passwordError;
 
+  bool isLoading = false; // NEW
   bool isValidEmail(String value) {
     return value.contains("@") && value.endsWith(".com");
   }
 
-  void _onLogin() {
+  void _onLogin() async {
     setState(() {
       emailError = null;
       passwordError = null;
-
-      if (email.text.trim().isEmpty) {
-        emailError = "Email cannot be empty";
-      } else if (!isValidEmail(email.text.trim())) {
-        emailError = "Enter a valid email ending with .com";
-      }
-
-      if (password.text.trim().isEmpty) {
-        passwordError = "Password cannot be empty";
-      }
-
-      if (emailError != null || passwordError != null) return;
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const BottomNavigationScreen()),
-      );
+      isLoading = true; // NEW: show loading
     });
+
+    // Your original validation
+    if (email.text.trim().isEmpty) {
+      emailError = "Email cannot be empty";
+    } else if (!isValidEmail(email.text.trim())) {
+      emailError = "Enter a valid email ending with .com";
+    }
+
+    if (password.text.trim().isEmpty) {
+      passwordError = "Password cannot be empty";
+    }
+
+    if (emailError != null || passwordError != null) {
+      setState(() => isLoading = false); // NEW: stop loading
+      return;
+    }
+
+    // === NEW: Check user from Hive ===
+    try {
+      // Use GetUserUseCase to get user
+      final getUserUseCase = GetUserUseCase(authRepository); // NEW
+      final user = getUserUseCase(email.text.trim()); // NEW
+
+      if (user != null && user.password == password.text.trim()) {
+        // Success
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Login successful!")), // NEW
+          );
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          );
+        }
+      } else {
+        // Fail
+        if (mounted) {
+          setState(
+            () => passwordError = "Invalid email or password",
+          ); // NEW: set error
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Login failed: $e")), // NEW
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false); // NEW: stop loading
+      }
+    }
   }
 
   Widget socialTile(String asset) {

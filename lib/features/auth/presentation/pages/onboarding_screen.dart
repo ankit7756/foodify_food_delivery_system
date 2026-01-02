@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/onboarding_page.dart';
-import '../theme/app_colors.dart';
+import '../../../../app/theme/app_colors.dart';
 import 'login_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {

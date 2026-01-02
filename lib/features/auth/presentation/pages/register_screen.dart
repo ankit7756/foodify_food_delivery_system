@@ -1,8 +1,19 @@
 import 'package:flutter/material.dart';
 import '../widgets/my_textfield.dart';
 import '../widgets/my_button.dart';
-import '../theme/app_colors.dart';
+import '../../../../app/theme/app_colors.dart';
 import 'login_screen.dart';
+import '../../domain/entities/user_entity.dart';
+import '../../data/datasources/local/auth_local_datasource.dart';
+import '../../data/repositories/auth_repository_impl.dart';
+import '../../domain/usecases/auth_usecases.dart';
+
+final authLocalDataSource = AuthLocalDataSource(); // NEW
+final authRepository = AuthRepositoryImpl(
+  localDataSource: authLocalDataSource,
+); // NEW
+
+// final authUseCases = AuthUseCases(repository: authRepository); // NEW
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -20,37 +31,73 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? emailError;
   String? passwordError;
 
+  bool isLoading = false; // NEW
+
   bool isValidEmail(String value) {
     return value.contains("@") && value.endsWith(".com");
   }
 
-  void _onRegister() {
+  void _onRegister() async {
     setState(() {
       nameError = null;
       emailError = null;
       passwordError = null;
-
-      if (name.text.trim().isEmpty) nameError = "Name cannot be empty";
-
-      if (email.text.trim().isEmpty) {
-        emailError = "Email cannot be empty";
-      } else if (!isValidEmail(email.text.trim())) {
-        emailError = "Enter a valid email ending with .com";
-      }
-
-      if (password.text.trim().isEmpty) {
-        passwordError = "Password cannot be empty";
-      }
-
-      if (nameError != null || emailError != null || passwordError != null) {
-        return;
-      }
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+      isLoading = true; // NEW: show loading
     });
+
+    // Your original validation
+    if (name.text.trim().isEmpty) {
+      nameError = "Name cannot be empty";
+    }
+
+    if (email.text.trim().isEmpty) {
+      emailError = "Email cannot be empty";
+    } else if (!isValidEmail(email.text.trim())) {
+      emailError = "Enter a valid email ending with .com";
+    }
+
+    if (password.text.trim().isEmpty) {
+      passwordError = "Password cannot be empty";
+    }
+
+    if (nameError != null || emailError != null || passwordError != null) {
+      setState(() => isLoading = false); // NEW: stop loading
+      return;
+    }
+
+    // === NEW: Create entity and save to Hive ===
+    final newUser = UserEntity(
+      username: name.text.trim(),
+      email: email.text.trim(),
+      password: password.text.trim(),
+    );
+
+    try {
+      // Save user using clean architecture use case
+      final saveUserUseCase = SaveUserUseCase(authRepository);
+      await saveUserUseCase(newUser);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Registration successful!")), // NEW
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Registration failed: $e")), // NEW
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false); // NEW: stop loading
+      }
+    }
   }
 
   @override
