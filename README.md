@@ -69,5 +69,4 @@ This structure improves **scalability**, **maintainability**, and **testability*
 
 ---
 
-## 📁 Project Structure (Flutter)
 
