@@ -708,6 +708,7 @@ import '../../data/datasources/local/auth_local_datasource.dart';
 import '../../data/datasources/remote/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/usecases/auth_usecases.dart';
+import '../../../../core/config/api_config.dart'; // Add this import at top
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -755,7 +756,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       // Initialize dependencies
-      final apiClient = ApiClient(baseUrl: 'http://192.168.16.104:3000');
+      // final apiClient = ApiClient(baseUrl: 'http://192.168.16.104:3000');
+      final apiClient = ApiClient(baseUrl: ApiConfig.baseUrl);
 
       final authLocalDataSource = AuthLocalDataSource();
       final authRemoteDataSource = AuthRemoteDataSource(client: apiClient);
