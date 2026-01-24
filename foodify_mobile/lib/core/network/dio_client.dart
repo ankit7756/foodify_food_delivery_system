@@ -1,13 +1,13 @@
 import 'package:dio/dio.dart';
+import '../config/api_config.dart';
 
-class ApiClient {
-  final String baseUrl;
+class DioClient {
   late final Dio _dio;
 
-  ApiClient({required this.baseUrl}) {
+  DioClient() {
     _dio = Dio(
       BaseOptions(
-        baseUrl: baseUrl,
+        baseUrl: ApiConfig.baseUrl,
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
         headers: {
@@ -17,6 +17,7 @@ class ApiClient {
       ),
     );
 
+    // Add interceptors for logging (development only)
     _dio.interceptors.add(
       LogInterceptor(
         request: true,
@@ -29,23 +30,23 @@ class ApiClient {
     );
   }
 
-  Future<Map<String, dynamic>> post(
-    String endpoint,
-    Map<String, dynamic> body,
-  ) async {
+  Dio get dio => _dio;
+
+  // POST request
+  Future<Response> post(String endpoint, Map<String, dynamic> data) async {
     try {
-      final response = await _dio.post(endpoint, data: body);
-      return response.data as Map<String, dynamic>;
+      final response = await _dio.post(endpoint, data: data);
+      return response;
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
   // GET request
-  Future<Map<String, dynamic>> get(String endpoint) async {
+  Future<Response> get(String endpoint) async {
     try {
       final response = await _dio.get(endpoint);
-      return response.data as Map<String, dynamic>;
+      return response;
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -56,14 +57,11 @@ class ApiClient {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return Exception('Connection timeout. Please check your internet.');
+        return Exception('Connection timeout');
       case DioExceptionType.badResponse:
-        final message = error.response?.data['message'] ?? 'Server error';
-        return Exception('API Error: $message');
+        return Exception(error.response?.data['message'] ?? 'Server error');
       case DioExceptionType.cancel:
         return Exception('Request cancelled');
-      case DioExceptionType.connectionError:
-        return Exception('No internet connection');
       default:
         return Exception('Network error: ${error.message}');
     }

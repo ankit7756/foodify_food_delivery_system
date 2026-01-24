@@ -1,20 +1,3 @@
-// import 'package:hive_flutter/hive_flutter.dart';
-// import '../../constants/hive_table_constants.dart';
-// import '../../../features/auth/data/models/auth_hive_model.dart';
-
-// class HiveService {
-//   static Future<void> initHive() async {
-//     await Hive.initFlutter();
-//     Hive.registerAdapter(AuthHiveModelAdapter());
-//     await Hive.openBox<AuthHiveModel>(HiveTableConstants.userTable);
-//   }
-
-//   static Box<AuthHiveModel> getUserBox() {
-//     return Hive.box<AuthHiveModel>(HiveTableConstants.userTable);
-//   }
-
-//   static Future<void> openUserBox() async {}
-// }
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../constants/hive_table_constants.dart';
 import '../../../features/auth/data/models/auth_hive_model.dart';

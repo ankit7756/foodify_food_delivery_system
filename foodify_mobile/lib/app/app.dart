@@ -10,8 +10,8 @@ class App extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Foodify',
-      theme: getApplicationTheme(), // your theme from theme_data.dart
-      home: const SplashScreen(), // start with splash screen
+      theme: getApplicationTheme(),
+      home: const SplashScreen(),
     );
   }
 }
