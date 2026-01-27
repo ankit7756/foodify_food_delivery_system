@@ -1,0 +1,43 @@
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, "../../uploads/profiles");
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure storage
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+        // Generate unique filename: userId_timestamp.ext
+        const userId = (req as any).userId || "unknown";
+        const uniqueSuffix = Date.now();
+        const ext = path.extname(file.originalname);
+        cb(null, `${userId}_${uniqueSuffix}${ext}`);
+    }
+});
+
+const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    console.log('📸 Received file:', {
+        fieldname: file.fieldname,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        encoding: file.encoding
+    });
+
+    // Accept ANY file for now (just for testing)
+    cb(null, true);
+};
+// Create upload middleware
+export const uploadProfileImage = multer({
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB max
+    },
+    fileFilter: fileFilter
+}).single("profileImage"); // Field name must match frontend
