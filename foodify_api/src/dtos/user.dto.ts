@@ -1,9 +1,8 @@
 import { z } from "zod";
 import { RegisterSchema, LoginSchema } from "../types/user.type";
 
-// Reuse RegisterSchema from types, but add confirmPassword validation
 export const CreateUserDTO = RegisterSchema.pick({
-    name: true,
+    fullName: true,
     email: true,
     password: true,
 }).extend({
