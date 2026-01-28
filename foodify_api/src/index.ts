@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import { connectDB } from "./database/mongodb";
 import authRoutes from "./routes/auth.route";
+import restaurantRoutes from "./routes/restaurant.route"; // 🆕 ADD
+import foodRoutes from "./routes/food.route"; // 🆕 ADD
 import path from "path";
 import { PORT } from "./config";
 
@@ -17,11 +19,15 @@ app.use(express.json());
 
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
+
 app.get("/", (req, res) => {
     res.json({ message: "Foodify Auth API is running!" });
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/restaurants", restaurantRoutes); // 🆕 ADD
+app.use("/api/foods", foodRoutes); // 🆕 ADD
+
 
 const start = async () => {
     await connectDB();
