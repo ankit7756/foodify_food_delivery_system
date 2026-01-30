@@ -4,6 +4,7 @@ import '../../domain/entities/food_entity.dart';
 import '../providers/home_providers.dart';
 import '../../../cart/domain/entities/cart_item_entity.dart';
 import '../../../cart/presentation/view_model/cart_view_model.dart';
+import '../../../dashboard/presentation/pages/dashboard_screen.dart';
 
 class FoodDetailPage extends ConsumerStatefulWidget {
   final String foodId;
@@ -492,18 +493,18 @@ class _FoodDetailPageState extends ConsumerState<FoodDetailPage> {
                                             'Added ${food!.name} x$quantity to cart',
                                           ),
                                           backgroundColor: Colors.green,
-                                          duration: const Duration(seconds: 2),
+                                          duration: const Duration(
+                                            seconds: 3,
+                                          ), // ✅ FIXED: 3 seconds
                                           action: SnackBarAction(
                                             label: 'View Cart',
                                             textColor: Colors.white,
                                             onPressed: () {
-                                              // Navigate to cart tab
-                                              Navigator.pop(
-                                                context,
-                                              ); // Close food detail
-                                              DefaultTabController.of(
-                                                context,
-                                              ).animateTo(1);
+                                              // Close food detail page
+                                              Navigator.pop(context);
+                                              // Switch to cart tab using global key
+                                              dashboardKey.currentState
+                                                  ?.switchToTab(1);
                                             },
                                           ),
                                         ),

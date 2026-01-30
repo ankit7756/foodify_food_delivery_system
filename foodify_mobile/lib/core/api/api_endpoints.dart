@@ -17,4 +17,12 @@ class ApiEndpoints {
   static const String getPopularFoods = '/api/foods/popular';
   static const String getFoodsByRestaurant = '/api/foods/restaurant';
   static const String getFoodById = '/api/foods';
+
+  // Order endpoints
+  static const String createOrder = '/api/orders';
+  static const String getUserOrders = '/api/orders';
+  static const String getCurrentOrders = '/api/orders/current';
+  static const String getOrderHistory = '/api/orders/history';
+  static const String getOrderById = '/api/orders';
+  static const String updateOrderStatus = '/api/orders';
 }

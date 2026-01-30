@@ -1,4 +1,4 @@
-import { UserModel } from "../models/user.model";
+import { UserModel } from "../models/User.model";
 
 export const getUserByEmail = async (email: string) => {
     return await UserModel.findOne({ email });

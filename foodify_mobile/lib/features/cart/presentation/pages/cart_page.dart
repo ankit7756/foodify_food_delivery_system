@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../view_model/cart_view_model.dart';
 import '../widgets/cart_item_card.dart';
 import 'checkout_page.dart';
+import '../../../dashboard/presentation/pages/dashboard_screen.dart';
 
 class CartPage extends ConsumerWidget {
   const CartPage({super.key});
@@ -86,8 +87,8 @@ class CartPage extends ConsumerWidget {
                   const SizedBox(height: 32),
                   ElevatedButton(
                     onPressed: () {
-                      // Navigate to home (bottom nav index 0)
-                      DefaultTabController.of(context).animateTo(0);
+                      // Get the dashboard key and switch to home tab
+                      dashboardKey.currentState?.switchToTab(0);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF6B35),

@@ -2,14 +2,14 @@ import express from "express";
 import cors from "cors";
 import { connectDB } from "./database/mongodb";
 import authRoutes from "./routes/auth.route";
-import restaurantRoutes from "./routes/restaurant.route"; // 🆕 ADD
-import foodRoutes from "./routes/food.route"; // 🆕 ADD
+import restaurantRoutes from "./routes/restaurant.route";
+import foodRoutes from "./routes/food.route";
+import orderRoutes from "./routes/order.route";
 import path from "path";
 import { PORT } from "./config";
 
 const app = express();
 
-// Update CORS to allow mobile app
 app.use(cors({
     origin: "*",
     credentials: true
@@ -25,8 +25,9 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
-app.use("/api/restaurants", restaurantRoutes); // 🆕 ADD
-app.use("/api/foods", foodRoutes); // 🆕 ADD
+app.use("/api/restaurants", restaurantRoutes);
+app.use("/api/foods", foodRoutes);
+app.use("/api/orders", orderRoutes);
 
 
 const start = async () => {

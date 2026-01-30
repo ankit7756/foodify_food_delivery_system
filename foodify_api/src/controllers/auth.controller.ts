@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { RegisterSchema, LoginSchema } from "../types/user.type";
 import { registerUser, loginUser } from "../services/user.service";
-import { UserModel } from "../models/user.model";
+import { UserModel } from "../models/User.model";
 import { BASE_URL } from "../config";
 import path from "path";
 import fs from "fs";

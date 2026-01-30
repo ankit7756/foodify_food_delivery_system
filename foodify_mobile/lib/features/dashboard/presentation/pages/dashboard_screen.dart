@@ -95,6 +95,9 @@ import '../../../orders/presentation/pages/orders_page.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
 import '../../../cart/presentation/view_model/cart_view_model.dart';
 
+final GlobalKey<_DashboardScreenState> dashboardKey =
+    GlobalKey<_DashboardScreenState>();
+
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
@@ -111,6 +114,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     const OrdersPage(),
     const ProfilePage(),
   ];
+
+  void switchToTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

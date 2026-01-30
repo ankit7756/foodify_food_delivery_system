@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../view_model/cart_view_model.dart';
+import '../../../orders/presentation/view_model/orders_view_model.dart';
+import '../../../dashboard/presentation/pages/dashboard_screen.dart';
 
 class CheckoutPage extends ConsumerStatefulWidget {
   const CheckoutPage({super.key});
@@ -24,55 +26,116 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
     super.dispose();
   }
 
-  void _placeOrder() {
+  void _placeOrder() async {
     final cartState = ref.read(cartViewModelProvider);
 
-    // TODO: Implement order placement API
-    // For now, just show success and clear cart
+    if (_addressController.text.trim().isEmpty ||
+        _phoneController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all required fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
+    // Prepare order data
+    final orderData = {
+      'restaurantId': cartState.restaurantId,
+      'restaurantName': cartState.restaurantName,
+      'items': cartState.items
+          .map(
+            (item) => {
+              'foodId': item.foodId,
+              'name': item.name,
+              'price': item.price,
+              'quantity': item.quantity,
+              'image': item.image,
+            },
+          )
+          .toList(),
+      'subtotal': cartState.subtotal,
+      'deliveryFee': cartState.deliveryFee,
+      'totalAmount': cartState.grandTotal,
+      'deliveryAddress': _addressController.text.trim(),
+      'phone': _phoneController.text.trim(),
+      'paymentMethod': _paymentMethod,
+    };
+
+    // Show loading
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 32),
-            SizedBox(width: 12),
-            Text('Order Placed!'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Your order has been placed successfully!'),
-            const SizedBox(height: 12),
-            Text(
-              'Total: Rs. ${cartState.grandTotal.toStringAsFixed(0)}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text('Delivery to: ${_addressController.text}'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              // Clear cart
-              ref.read(cartViewModelProvider.notifier).clearCart();
-
-              // Go back to home
-              Navigator.of(dialogContext).pop(); // Close dialog
-              Navigator.of(context).pop(); // Close checkout page
-
-              // Navigate to orders tab (index 2)
-              DefaultTabController.of(context).animateTo(2);
-            },
-            child: const Text('View Orders'),
-          ),
-        ],
-      ),
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
+
+    // Create order
+    final success = await ref
+        .read(ordersViewModelProvider.notifier)
+        .createOrder(orderData);
+
+    // Close loading
+    if (mounted) Navigator.pop(context);
+
+    if (success) {
+      // Clear cart
+      ref.read(cartViewModelProvider.notifier).clearCart();
+
+      // Show success dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 32),
+                SizedBox(width: 12),
+                Text('Order Placed!'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Your order has been placed successfully!'),
+                const SizedBox(height: 12),
+                Text(
+                  'Total: Rs. ${cartState.grandTotal.toStringAsFixed(0)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text('Delivery to: ${_addressController.text}'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(); // Close dialog
+                  Navigator.of(context).pop(); // Close checkout page
+
+                  // Navigate to orders tab (index 2)
+                  dashboardKey.currentState?.switchToTab(2);
+                },
+                child: const Text('View Orders'),
+              ),
+            ],
+          ),
+        );
+      }
+    } else {
+      // Show error
+      if (mounted) {
+        final errorMessage = ref.read(ordersViewModelProvider).errorMessage;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage ?? 'Failed to place order'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
