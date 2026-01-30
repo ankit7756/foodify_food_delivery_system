@@ -1,263 +1,295 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../view_model/home_view_model.dart';
+import '../state/home_state.dart';
+import '../widgets/restaurant_card.dart';
+import '../widgets/food_card.dart';
+import '../widgets/category_chip.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    // Load home data when page opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(homeViewModelProvider.notifier).loadHomeData();
+    });
+  }
+
+  Future<void> _refreshData() async {
+    await ref.read(homeViewModelProvider.notifier).loadHomeData();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final homeState = ref.watch(homeViewModelProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: homeState.status == HomeStatus.loading
+            ? const Center(child: CircularProgressIndicator())
+            : homeState.status == HomeStatus.error
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Column(
+                    const Icon(
+                      Icons.error_outline,
+                      size: 60,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      homeState.errorMessage ?? 'Something went wrong',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _refreshData,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              )
+            : RefreshIndicator(
+                onRefresh: _refreshData,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Hi, Welcome! 👋',
+                        // Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Hi, Welcome! 👋',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'What would you like to eat today?',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.notifications_outlined,
+                                color: Color(0xFFFF6B35),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Search Bar
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: TextField(
+                            decoration: InputDecoration(
+                              hintText: 'Search for food or restaurant...',
+                              border: InputBorder.none,
+                              icon: Icon(Icons.search, color: Colors.grey[400]),
+                              hintStyle: TextStyle(color: Colors.grey[400]),
+                            ),
+                            onTap: () {
+                              // TODO: Navigate to search page
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Search feature coming soon!'),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Categories
+                        const Text(
+                          'Categories',
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'What would you like to eat today?',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
+                        const SizedBox(height: 16),
+
+                        SizedBox(
+                          height: 50,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            children: [
+                              CategoryChip(
+                                emoji: '🍕',
+                                label: 'Pizza',
+                                onTap: () {},
+                              ),
+                              CategoryChip(
+                                emoji: '🍔',
+                                label: 'Burger',
+                                onTap: () {},
+                              ),
+                              CategoryChip(
+                                emoji: '🍜',
+                                label: 'Noodles',
+                                onTap: () {},
+                              ),
+                              CategoryChip(
+                                emoji: '🍰',
+                                label: 'Dessert',
+                                onTap: () {},
+                              ),
+                              CategoryChip(
+                                emoji: '☕',
+                                label: 'Drinks',
+                                onTap: () {},
+                              ),
+                            ],
                           ),
                         ),
+
+                        const SizedBox(height: 24),
+
+                        // Popular Foods
+                        if (homeState.popularFoods.isNotEmpty) ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Popular Foods',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {},
+                                child: const Text(
+                                  'See All',
+                                  style: TextStyle(
+                                    color: Color(0xFFFF6B35),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          SizedBox(
+                            height: 220,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: homeState.popularFoods.length,
+                              itemBuilder: (context, index) {
+                                return FoodCard(
+                                  food: homeState.popularFoods[index],
+                                );
+                              },
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+                        ],
+
+                        // Popular Restaurants
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Popular Restaurants',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {},
+                              child: const Text(
+                                'See All',
+                                style: TextStyle(
+                                  color: Color(0xFFFF6B35),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Restaurant List
+                        if (homeState.restaurants.isEmpty)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(40),
+                              child: Text('No restaurants available'),
+                            ),
+                          )
+                        else
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: homeState.restaurants.length,
+                            itemBuilder: (context, index) {
+                              return RestaurantCard(
+                                restaurant: homeState.restaurants[index],
+                              );
+                            },
+                          ),
                       ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.notifications_outlined,
-                        color: Color(0xFFFF6B35),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // Search Bar
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search for food or restaurant...',
-                      border: InputBorder.none,
-                      icon: Icon(Icons.search, color: Colors.grey[400]),
-                      hintStyle: TextStyle(color: Colors.grey[400]),
-                    ),
                   ),
                 ),
-
-                const SizedBox(height: 24),
-
-                // Categories
-                const Text(
-                  'Categories',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                SizedBox(
-                  height: 100,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      _buildCategoryCard('🍕', 'Pizza'),
-                      _buildCategoryCard('🍔', 'Burger'),
-                      _buildCategoryCard('🍜', 'Noodles'),
-                      _buildCategoryCard('🍰', 'Dessert'),
-                      _buildCategoryCard('☕', 'Drinks'),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Popular Restaurants
-                const Text(
-                  'Popular Restaurants',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                _buildRestaurantCard(
-                  'Pizza Hut',
-                  'Italian, Fast Food',
-                  '4.5',
-                  '30-40 min',
-                ),
-                _buildRestaurantCard(
-                  'KFC',
-                  'Chicken, Fast Food',
-                  '4.3',
-                  '25-35 min',
-                ),
-                _buildRestaurantCard(
-                  'Burger King',
-                  'Burgers, Fast Food',
-                  '4.4',
-                  '20-30 min',
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryCard(String emoji, String name) {
-    return Container(
-      width: 80,
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 32)),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRestaurantCard(
-    String name,
-    String cuisine,
-    String rating,
-    String time,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFF6B35).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.restaurant,
-              color: Color(0xFFFF6B35),
-              size: 40,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  cuisine,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.star, size: 16, color: Colors.amber),
-                    const SizedBox(width: 4),
-                    Text(
-                      rating,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Text(
-                      time,
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+              ),
       ),
     );
   }
