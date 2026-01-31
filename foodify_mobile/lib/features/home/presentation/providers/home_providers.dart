@@ -6,7 +6,7 @@ import '../../domain/repositories/home_repository.dart';
 import '../../domain/usecases/get_restaurants_usecase.dart';
 import '../../domain/usecases/get_popular_foods_usecase.dart';
 import '../../domain/usecases/get_restaurant_detail_usecase.dart';
-import '../../domain/usecases/get_foods_by_resturant_usecase.dart';
+import '../../domain/usecases/get_foods_by_restaurant_usecase.dart';
 import '../../domain/usecases/get_food_detail_usecase.dart';
 
 // Data Source
