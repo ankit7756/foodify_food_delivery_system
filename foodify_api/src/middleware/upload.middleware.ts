@@ -30,14 +30,13 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
         encoding: file.encoding
     });
 
-    // Accept ANY file for now (just for testing)
     cb(null, true);
 };
 // Create upload middleware
 export const uploadProfileImage = multer({
     storage: storage,
     limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB max
+        fileSize: 5 * 1024 * 1024
     },
     fileFilter: fileFilter
-}).single("profileImage"); // Field name must match frontend
+}).single("profileImage"); 

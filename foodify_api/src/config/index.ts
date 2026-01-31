@@ -8,5 +8,4 @@ export const MONGODB_URI =
 
 export const PORT = Number(process.env.PORT) || 5050;
 
-// 🆕 Dynamic base URL - automatically uses local IP or configured URL
 export const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;

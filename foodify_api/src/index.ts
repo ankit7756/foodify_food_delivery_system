@@ -32,7 +32,7 @@ app.use("/api/orders", orderRoutes);
 
 const start = async () => {
     await connectDB();
-    app.listen(PORT, '0.0.0.0', () => {  // Listen on all interfaces
+    app.listen(PORT, '0.0.0.0', () => {
         console.log(`Server running on http://localhost:${PORT}`);
     });
 };

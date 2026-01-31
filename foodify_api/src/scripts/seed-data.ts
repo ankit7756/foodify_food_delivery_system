@@ -244,11 +244,11 @@ const seedData = async () => {
 
         await FoodModel.insertMany(foods);
 
-        console.log("✅ Foods created:", foods.length);
-        console.log("🎉 Database seeded successfully!");
+        console.log(" Foods created:", foods.length);
+        console.log(" Database seeded successfully!");
         process.exit(0);
     } catch (error) {
-        console.error("❌ Error seeding database:", error);
+        console.error(" Error seeding database:", error);
         process.exit(1);
     }
 };
