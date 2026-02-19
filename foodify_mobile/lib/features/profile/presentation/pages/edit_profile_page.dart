@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../view_model/profile_view_model.dart';
 import '../state/profile_state.dart';
+import '../../../notifications/domain/entities/notification_entity.dart';
+import '../../../notifications/presentation/view_model/notification_view_model.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
@@ -23,7 +25,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    // Pre-fill form with current data
     final profile = ref.read(profileViewModelProvider).profile;
     if (profile != null) {
       _fullNameController.text = profile.fullName;
@@ -39,11 +40,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       maxHeight: 800,
       imageQuality: 85,
     );
-
     if (image != null) {
-      setState(() {
-        _selectedImage = File(image.path);
-      });
+      setState(() => _selectedImage = File(image.path));
     }
   }
 
@@ -79,50 +77,42 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   Widget build(BuildContext context) {
     final profileState = ref.watch(profileViewModelProvider);
 
-    // ref.listen<ProfileState>(profileViewModelProvider, (previous, next) {
-    //   if (next.status == previous?.status) return;
-
-    //   if (next.status == ProfileStatus.updated) {
-    //     ScaffoldMessenger.of(context).showSnackBar(
-    //       const SnackBar(
-    //         content: Text('Profile updated successfully!'),
-    //         backgroundColor: Colors.green,
-    //       ),
-    //     );
-    //     ref.read(profileViewModelProvider.notifier).resetState();
-    //     Navigator.pop(context);
-    //   } else if (next.status == ProfileStatus.error &&
-    //       next.errorMessage != null) {
-    //     ScaffoldMessenger.of(context).showSnackBar(
-    //       SnackBar(
-    //         content: Text(next.errorMessage!),
-    //         backgroundColor: Colors.red,
-    //       ),
-    //     );
-    //     ref.read(profileViewModelProvider.notifier).resetState();
-    //   }
-    // });
-    ref.listen<ProfileState>(profileViewModelProvider, (previous, next) {
+    ref.listen<ProfileState>(profileViewModelProvider, (previous, next) async {
       if (next.status == previous?.status) return;
 
       if (next.status == ProfileStatus.updated) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile updated successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        // ✅ FIXED: Reload profile after update, then navigate back
+        // ✅ Add notification for profile update
+        await ref
+            .read(notificationViewModelProvider.notifier)
+            .addNotification(
+              title: '👤 Profile Updated',
+              message: 'Your profile has been updated successfully.',
+              type: NotificationType.profile,
+            );
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile updated successfully!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+
         ref.read(profileViewModelProvider.notifier).resetState();
-        Navigator.pop(context); // Go back to profile page
+
+        if (context.mounted) Navigator.pop(context);
       } else if (next.status == ProfileStatus.error &&
           next.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.errorMessage!),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(next.errorMessage!),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         ref.read(profileViewModelProvider.notifier).resetState();
       }
     });
@@ -212,35 +202,28 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
             const SizedBox(height: 32),
 
-            // Full Name Field
             _buildTextField(
               controller: _fullNameController,
               label: 'Full Name',
               icon: Icons.person_outline,
             ),
-
             const SizedBox(height: 16),
 
-            // Username Field
             _buildTextField(
               controller: _usernameController,
               label: 'Username',
               icon: Icons.alternate_email,
             ),
-
             const SizedBox(height: 16),
 
-            // Phone Field
             _buildTextField(
               controller: _phoneController,
               label: 'Phone',
               icon: Icons.phone_outlined,
               keyboardType: TextInputType.phone,
             ),
-
             const SizedBox(height: 32),
 
-            // Save Button
             SizedBox(
               width: double.infinity,
               height: 54,

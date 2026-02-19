@@ -24,12 +24,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     });
   }
 
-  // ❌ REMOVE THIS METHOD - IT'S CAUSING INFINITE LOOP
-  // @override
-  // void didChangeDependencies() {
-  //   ...
-  // }
-
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
     await ref.read(authViewModelProvider.notifier).logoutUser();
 
@@ -61,13 +55,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        actions: [
-          // ✅ ADD: Refresh button
-          IconButton(
-            onPressed: _refreshProfile,
-            icon: const Icon(Icons.refresh, color: Colors.black87),
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: _refreshProfile,

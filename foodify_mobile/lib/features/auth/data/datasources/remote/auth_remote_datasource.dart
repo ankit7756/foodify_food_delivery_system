@@ -16,4 +16,15 @@ class AuthRemoteDataSource {
     final response = await client.post(ApiEndpoints.login, body);
     return AuthApiModel.fromJson(response);
   }
+
+  Future<Map<String, dynamic>> resetPasswordDirect(
+    String email,
+    String newPassword,
+  ) async {
+    final response = await client.post(ApiEndpoints.resetPasswordDirect, {
+      'email': email,
+      'newPassword': newPassword,
+    });
+    return response;
+  }
 }

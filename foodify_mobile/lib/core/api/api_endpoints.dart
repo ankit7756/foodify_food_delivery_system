@@ -6,6 +6,7 @@ class ApiEndpoints {
   static const String login = '/api/auth/login';
   static const String getProfile = '/api/auth/profile';
   static const String updateProfile = '/api/auth/profile';
+  static const String resetPasswordDirect = '/api/auth/reset-password-direct';
 
   // Restaurant endpoints
   static const String getAllRestaurants = '/api/restaurants';

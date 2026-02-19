@@ -15,4 +15,9 @@ abstract class OrdersRepository {
     String token,
     String orderId,
   );
+  Future<Either<Failure, OrderEntity>> updateOrderStatus(
+    String token,
+    String orderId,
+    String status,
+  );
 }

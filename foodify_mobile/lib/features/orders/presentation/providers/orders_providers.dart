@@ -7,6 +7,7 @@ import '../../domain/usecases/create_order_usecase.dart';
 import '../../domain/usecases/get_current_order_usecase.dart';
 import '../../domain/usecases/get_order_history_usecase.dart';
 import '../../domain/usecases/get_order_detail_usecase.dart';
+import '../../domain/usecases/update_order_status_usecase.dart';
 
 // Data Source
 final ordersRemoteDataSourceProvider = Provider<OrdersRemoteDataSource>((ref) {
@@ -41,4 +42,11 @@ final getOrderHistoryUseCaseProvider = Provider<GetOrderHistoryUseCase>((ref) {
 final getOrderDetailUseCaseProvider = Provider<GetOrderDetailUseCase>((ref) {
   final repository = ref.read(ordersRepositoryProvider);
   return GetOrderDetailUseCase(repository);
+});
+
+final updateOrderStatusUseCaseProvider = Provider<UpdateOrderStatusUseCase>((
+  ref,
+) {
+  final repository = ref.read(ordersRepositoryProvider);
+  return UpdateOrderStatusUseCase(repository);
 });

@@ -79,4 +79,22 @@ class OrdersRemoteDataSource {
       throw Exception('Failed to get order: $e');
     }
   }
+
+  // Add this method inside OrdersRemoteDataSource class
+  Future<OrderModel> updateOrderStatus(
+    String token,
+    String orderId,
+    String status,
+  ) async {
+    try {
+      final response = await dioClient.dio.put(
+        '${ApiEndpoints.updateOrderStatus}/$orderId/status',
+        data: {'status': status},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return OrderModel.fromJson(response.data['data']);
+    } catch (e) {
+      throw Exception('Failed to update order status: $e');
+    }
+  }
 }

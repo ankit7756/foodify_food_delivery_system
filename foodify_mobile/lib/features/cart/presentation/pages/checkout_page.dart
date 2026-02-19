@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../view_model/cart_view_model.dart';
 import '../../../orders/presentation/view_model/orders_view_model.dart';
 import '../../../dashboard/presentation/pages/dashboard_screen.dart';
+import '../../../notifications/domain/entities/notification_entity.dart';
+import '../../../notifications/presentation/view_model/notification_view_model.dart';
 
 class CheckoutPage extends ConsumerStatefulWidget {
   const CheckoutPage({super.key});
@@ -79,6 +81,16 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
     if (mounted) Navigator.pop(context);
 
     if (success) {
+      // ✅ Add notification for order placed
+      await ref
+          .read(notificationViewModelProvider.notifier)
+          .addNotification(
+            title: '📋 Order Placed Successfully!',
+            message:
+                'Your order from ${cartState.restaurantName} has been placed and is being confirmed by the restaurant.',
+            type: NotificationType.order,
+          );
+
       // Clear cart
       ref.read(cartViewModelProvider.notifier).clearCart();
 
@@ -112,10 +124,8 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.of(dialogContext).pop(); // Close dialog
-                  Navigator.of(context).pop(); // Close checkout page
-
-                  // Navigate to orders tab (index 2)
+                  Navigator.of(dialogContext).pop();
+                  Navigator.of(context).pop();
                   dashboardKey.currentState?.switchToTab(2);
                 },
                 child: const Text('View Orders'),
@@ -125,7 +135,6 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
         );
       }
     } else {
-      // Show error
       if (mounted) {
         final errorMessage = ref.read(ordersViewModelProvider).errorMessage;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -364,11 +373,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
   Widget _buildPaymentOption(String title, IconData icon) {
     final isSelected = _paymentMethod == title;
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _paymentMethod = title;
-        });
-      },
+      onTap: () => setState(() => _paymentMethod = title),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
