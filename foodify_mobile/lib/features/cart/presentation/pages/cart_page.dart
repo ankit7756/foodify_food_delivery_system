@@ -4,12 +4,85 @@ import '../view_model/cart_view_model.dart';
 import '../widgets/cart_item_card.dart';
 import 'checkout_page.dart';
 import '../../../dashboard/presentation/pages/dashboard_screen.dart';
+import '../../../../core/sensors/accelerometer_service.dart';
 
-class CartPage extends ConsumerWidget {
+class CartPage extends ConsumerStatefulWidget {
   const CartPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CartPage> createState() => _CartPageState();
+}
+
+class _CartPageState extends ConsumerState<CartPage> {
+  late AccelerometerService _accelerometerService;
+
+  @override
+  void initState() {
+    super.initState();
+    _accelerometerService = AccelerometerService(onShake: _onShakeDetected);
+    _accelerometerService.startListening();
+  }
+
+  @override
+  void dispose() {
+    _accelerometerService.stopListening();
+    super.dispose();
+  }
+
+  void _onShakeDetected() {
+    final cartState = ref.read(cartViewModelProvider);
+    if (cartState.items.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Text('📳', style: TextStyle(fontSize: 24)),
+            SizedBox(width: 10),
+            Text(
+              'Shake Detected!',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Looks like you shook your phone! Do you want to clear your entire cart?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Keep Cart'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ref.read(cartViewModelProvider.notifier).clearCart();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('🗑️ Cart cleared!'),
+                  backgroundColor: Colors.orange,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Clear Cart'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final cartState = ref.watch(cartViewModelProvider);
 
     return Scaffold(
@@ -29,7 +102,6 @@ class CartPage extends ConsumerWidget {
           if (!cartState.isEmpty)
             IconButton(
               onPressed: () {
-                // Show clear cart confirmation
                 showDialog(
                   context: context,
                   builder: (dialogContext) => AlertDialog(
@@ -84,10 +156,39 @@ class CartPage extends ConsumerWidget {
                     'Add items to get started',
                     style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                   ),
+
+                  // ✅ Shake hint when cart is empty
+                  const SizedBox(height: 24),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 40),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('📳', style: TextStyle(fontSize: 18)),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Tip: Shake your phone to clear cart!',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.orange,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                   const SizedBox(height: 32),
                   ElevatedButton(
                     onPressed: () {
-                      // Get the dashboard key and switch to home tab
                       dashboardKey.currentState?.switchToTab(0);
                     },
                     style: ElevatedButton.styleFrom(
@@ -114,14 +215,41 @@ class CartPage extends ConsumerWidget {
             )
           : Column(
               children: [
-                // Cart Items List
+                // ✅ Shake hint banner at top when cart has items
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Text('📳', style: TextStyle(fontSize: 16)),
+                      SizedBox(width: 8),
+                      Text(
+                        'Shake your phone to clear cart',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.orange,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Restaurant Info
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -151,7 +279,6 @@ class CartPage extends ConsumerWidget {
 
                         const SizedBox(height: 20),
 
-                        // Items Label
                         Text(
                           'Items (${cartState.items.length})',
                           style: const TextStyle(
@@ -162,7 +289,6 @@ class CartPage extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
 
-                        // Cart Items
                         ...cartState.items.map(
                           (item) => CartItemCard(item: item),
                         ),
@@ -171,7 +297,6 @@ class CartPage extends ConsumerWidget {
                   ),
                 ),
 
-                // Bill Details & Checkout
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -192,7 +317,6 @@ class CartPage extends ConsumerWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Bill Details Header
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -210,7 +334,6 @@ class CartPage extends ConsumerWidget {
 
                         const SizedBox(height: 16),
 
-                        // Item Total
                         _buildBillRow(
                           'Item Total',
                           'Rs. ${cartState.subtotal.toStringAsFixed(0)}',
@@ -219,7 +342,6 @@ class CartPage extends ConsumerWidget {
 
                         const SizedBox(height: 8),
 
-                        // Delivery Fee
                         _buildBillRow(
                           'Delivery Fee',
                           'Rs. ${cartState.deliveryFee.toStringAsFixed(0)}',
@@ -231,7 +353,6 @@ class CartPage extends ConsumerWidget {
                           child: Divider(thickness: 1),
                         ),
 
-                        // Grand Total
                         _buildBillRow(
                           'Grand Total',
                           'Rs. ${cartState.grandTotal.toStringAsFixed(0)}',
@@ -240,7 +361,6 @@ class CartPage extends ConsumerWidget {
 
                         const SizedBox(height: 20),
 
-                        // Checkout Button
                         SizedBox(
                           width: double.infinity,
                           height: 56,
@@ -261,18 +381,18 @@ class CartPage extends ConsumerWidget {
                               ),
                               elevation: 0,
                             ),
-                            child: Row(
+                            child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text(
+                                Text(
                                   'Proceed to Checkout',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                const Icon(Icons.arrow_forward, size: 20),
+                                SizedBox(width: 8),
+                                Icon(Icons.arrow_forward, size: 20),
                               ],
                             ),
                           ),

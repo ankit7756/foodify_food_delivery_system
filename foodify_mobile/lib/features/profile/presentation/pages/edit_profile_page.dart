@@ -34,17 +34,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     }
   }
 
-  // Future<void> _pickImage() async {
-  //   final XFile? image = await _picker.pickImage(
-  //     source: ImageSource.gallery,
-  //     maxWidth: 800,
-  //     maxHeight: 800,
-  //     imageQuality: 85,
-  //   );
-  //   if (image != null) {
-  //     setState(() => _selectedImage = File(image.path));
-  //   }
-  // }
   Future<void> _pickImage() async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
@@ -109,28 +98,20 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
     if (source == null) return;
 
-    // ✅ FIX: Determine correct permission
-    // Camera uses Permission.camera
-    // Gallery on Android 13+ uses Permission.photos
-    // Gallery on Android 12 and below uses Permission.storage
     Permission permission;
     if (source == ImageSource.camera) {
       permission = Permission.camera;
     } else {
-      // Check Android SDK version
       if (await Permission.photos.status !=
           PermissionStatus.permanentlyDenied) {
-        // Android 13+ supports Permission.photos (READ_MEDIA_IMAGES)
         permission = Permission.photos;
       } else {
-        // Android 12 and below uses storage
         permission = Permission.storage;
       }
     }
 
     PermissionStatus status = await permission.request();
 
-    // ✅ FIX: If photos permission fails, fallback to storage permission
     if (status.isDenied && permission == Permission.photos) {
       status = await Permission.storage.request();
     }

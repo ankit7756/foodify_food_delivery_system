@@ -9,6 +9,7 @@ import '../view_model/orders_view_model.dart';
 import '../../../../core/storage/user_session_service.dart';
 import '../../../notifications/domain/entities/notification_entity.dart';
 import '../../../notifications/presentation/view_model/notification_view_model.dart';
+import '../../../../core/sensors/proximity_service.dart';
 
 class OrderDetailPage extends ConsumerStatefulWidget {
   final String orderId;
@@ -24,11 +25,19 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
   bool isLoading = true;
   String? errorMessage;
   bool isUpdating = false;
+  final ProximityService _proximityService = ProximityService();
 
   @override
   void initState() {
     super.initState();
     _loadOrderDetail();
+    _proximityService.startListening(); // ✅ ADD
+  }
+
+  @override
+  void dispose() {
+    _proximityService.dispose(); // ✅ ADD
+    super.dispose();
   }
 
   Future<void> _loadOrderDetail() async {
@@ -219,57 +228,101 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           ),
         ),
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                // Status Header
-                _buildStatusHeader(),
-                const SizedBox(height: 20),
-
-                // Order Timeline
-                _buildTimeline(),
-                const SizedBox(height: 20),
-
-                // Restaurant Info
-                _buildRestaurantInfo(),
-                const SizedBox(height: 20),
-
-                // Items List
-                _buildItemsList(),
-                const SizedBox(height: 20),
-
-                // Delivery Info
-                _buildDeliveryInfo(),
-                const SizedBox(height: 20),
-
-                // Bill Summary
-                _buildBillSummary(),
-                const SizedBox(height: 20),
-
-                if (order!.status == 'delivered') ...[
-                  const SizedBox(height: 20),
-                  _buildReviewSection(),
-                ],
-
-                // Show action buttons only for active orders (existing code)
-                if (isCurrentOrder) _buildActionButtons(canCancel),
-
-                const SizedBox(height: 40),
-              ],
-            ),
-          ),
-
-          // Loading overlay when updating
-          if (isUpdating)
-            Container(
-              color: Colors.black.withOpacity(0.3),
-              child: const Center(
-                child: CircularProgressIndicator(color: Color(0xFFFF6B35)),
+      body: ValueListenableBuilder<bool>(
+        valueListenable: _proximityService.isNear,
+        builder: (context, isNear, _) {
+          return Stack(
+            children: [
+              // Main scrollable content
+              SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildStatusHeader(),
+                    const SizedBox(height: 20),
+                    _buildTimeline(),
+                    const SizedBox(height: 20),
+                    _buildRestaurantInfo(),
+                    const SizedBox(height: 20),
+                    _buildItemsList(),
+                    const SizedBox(height: 20),
+                    _buildDeliveryInfo(),
+                    const SizedBox(height: 20),
+                    _buildBillSummary(),
+                    const SizedBox(height: 20),
+                    if (order!.status == 'delivered') ...[
+                      _buildReviewSection(),
+                      const SizedBox(height: 20),
+                    ],
+                    if (isCurrentOrder) _buildActionButtons(canCancel),
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
-            ),
-        ],
+
+              // Existing loading overlay
+              if (isUpdating)
+                Container(
+                  color: Colors.black.withOpacity(0.3),
+                  child: const Center(
+                    child: CircularProgressIndicator(color: Color(0xFFFF6B35)),
+                  ),
+                ),
+
+              // ✅ Proximity sensor overlay
+              if (isNear)
+                Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  color: Colors.black.withOpacity(0.85),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('🛵', style: TextStyle(fontSize: 72)),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Food is on the way!',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Don\'t worry, we\'ve got your order 🍽️',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF6B35).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFFFF6B35).withOpacity(0.5),
+                          ),
+                        ),
+                        child: const Text(
+                          '📱 Proximity Sensor Active',
+                          style: TextStyle(
+                            color: Color(0xFFFF6B35),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
