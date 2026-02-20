@@ -37,44 +37,235 @@ class _FoodDetailPageState extends ConsumerState<FoodDetailPage> {
     final result = await getFoodDetailUseCase(widget.foodId);
 
     result.fold(
-      (failure) {
-        setState(() {
-          isLoading = false;
-          errorMessage = failure.message;
-        });
-      },
-      (loadedFood) {
-        setState(() {
-          isLoading = false;
-          food = loadedFood;
-        });
-      },
+      (failure) => setState(() {
+        isLoading = false;
+        errorMessage = failure.message;
+      }),
+      (loadedFood) => setState(() {
+        isLoading = false;
+        food = loadedFood;
+      }),
     );
   }
 
-  void _incrementQuantity() {
-    setState(() {
-      quantity++;
-    });
-  }
+  void _incrementQuantity() => setState(() => quantity++);
 
   void _decrementQuantity() {
-    if (quantity > 1) {
-      setState(() {
-        quantity--;
-      });
-    }
+    if (quantity > 1) setState(() => quantity--);
   }
 
-  void _addToCart() {
-    // TODO: Implement cart functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Added ${food!.name} x$quantity to cart'),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
+  // ✅ Success bottom sheet modal
+  void _showAddedToCartModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isDismissible: true,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Success icon
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle,
+                color: Colors.green,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            const Text(
+              'Added to Cart!',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Food name + quantity
+            Text(
+              '${food!.name} × $quantity',
+              style: TextStyle(fontSize: 15, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Rs. ${(food!.price * quantity).toStringAsFixed(0)}',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFFF6B35),
+              ),
+            ),
+
+            const SizedBox(height: 28),
+
+            // Buttons
+            Row(
+              children: [
+                // Continue Shopping
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.pop(ctx); // close modal
+                      Navigator.pop(context); // close food detail
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFFF6B35)),
+                      foregroundColor: const Color(0xFFFF6B35),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text(
+                      'Keep Browsing',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // View Cart
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(ctx); // close modal
+                      Navigator.pop(context); // close food detail
+                      // Navigate to cart tab
+                      dashboardKey.currentState?.switchToTab(1);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF6B35),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.shopping_cart, size: 18),
+                        SizedBox(width: 6),
+                        Text(
+                          'View Cart',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
+  }
+
+  // ✅ Replace cart confirmation dialog
+  void _showReplaceCartDialog() {
+    final currentCart = ref.read(cartViewModelProvider);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.swap_horiz, color: Color(0xFFFF6B35)),
+            SizedBox(width: 8),
+            Text('Replace Cart?', style: TextStyle(fontSize: 18)),
+          ],
+        ),
+        content: Text(
+          'Your cart has items from ${currentCart.restaurantName}. Replace with items from ${food!.restaurantName}?',
+          style: TextStyle(color: Colors.grey[600], height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              final cartItem = CartItemEntity(
+                foodId: food!.id,
+                name: food!.name,
+                image: food!.image,
+                price: food!.price,
+                quantity: quantity,
+                restaurantId: food!.restaurantId,
+                restaurantName: food!.restaurantName ?? 'Restaurant',
+              );
+              ref.read(cartViewModelProvider.notifier).replaceCart(cartItem);
+              _showAddedToCartModal();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF6B35),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Replace'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleAddToCart() {
+    final cartItem = CartItemEntity(
+      foodId: food!.id,
+      name: food!.name,
+      image: food!.image,
+      price: food!.price,
+      quantity: quantity,
+      restaurantId: food!.restaurantId,
+      restaurantName: food!.restaurantName ?? 'Restaurant',
+    );
+
+    final currentCart = ref.read(cartViewModelProvider);
+
+    if (currentCart.isNotEmpty &&
+        currentCart.restaurantId != food!.restaurantId) {
+      _showReplaceCartDialog();
+    } else {
+      ref.read(cartViewModelProvider.notifier).addItem(cartItem);
+      _showAddedToCartModal();
+    }
   }
 
   @override
@@ -127,7 +318,6 @@ class _FoodDetailPageState extends ConsumerState<FoodDetailPage> {
       backgroundColor: const Color(0xFFFAFAFA),
       body: CustomScrollView(
         slivers: [
-          // App Bar with Food Image
           SliverAppBar(
             expandedHeight: 300,
             pinned: true,
@@ -183,7 +373,6 @@ class _FoodDetailPageState extends ConsumerState<FoodDetailPage> {
             ),
           ),
 
-          // Food Details
           SliverToBoxAdapter(
             child: Container(
               decoration: const BoxDecoration(
@@ -246,7 +435,7 @@ class _FoodDetailPageState extends ConsumerState<FoodDetailPage> {
 
                     const SizedBox(height: 8),
 
-                    // Category
+                    // Category badge
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -268,7 +457,6 @@ class _FoodDetailPageState extends ConsumerState<FoodDetailPage> {
 
                     const SizedBox(height: 20),
 
-                    // Price
                     Text(
                       'Rs. ${food!.price.toStringAsFixed(0)}',
                       style: const TextStyle(
@@ -280,7 +468,6 @@ class _FoodDetailPageState extends ConsumerState<FoodDetailPage> {
 
                     const SizedBox(height: 24),
 
-                    // Description Title
                     const Text(
                       'Description',
                       style: TextStyle(
@@ -290,8 +477,6 @@ class _FoodDetailPageState extends ConsumerState<FoodDetailPage> {
                       ),
                     ),
                     const SizedBox(height: 12),
-
-                    // Description
                     Text(
                       food!.description,
                       style: TextStyle(
@@ -303,7 +488,6 @@ class _FoodDetailPageState extends ConsumerState<FoodDetailPage> {
 
                     const SizedBox(height: 24),
 
-                    // Restaurant Info (if available)
                     if (food!.restaurantName != null) ...[
                       const Text(
                         'Restaurant',
@@ -330,14 +514,12 @@ class _FoodDetailPageState extends ConsumerState<FoodDetailPage> {
                                   width: 50,
                                   height: 50,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      width: 50,
-                                      height: 50,
-                                      color: Colors.grey[300],
-                                      child: const Icon(Icons.restaurant),
-                                    );
-                                  },
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: 50,
+                                    height: 50,
+                                    color: Colors.grey[300],
+                                    child: const Icon(Icons.restaurant),
+                                  ),
                                 ),
                               ),
                             const SizedBox(width: 12),
@@ -374,7 +556,6 @@ class _FoodDetailPageState extends ConsumerState<FoodDetailPage> {
 
                     Row(
                       children: [
-                        // Decrease Button
                         Container(
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey[300]!),
@@ -388,8 +569,6 @@ class _FoodDetailPageState extends ConsumerState<FoodDetailPage> {
                                 : Colors.grey,
                           ),
                         ),
-
-                        // Quantity Display
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                           child: Text(
@@ -400,8 +579,6 @@ class _FoodDetailPageState extends ConsumerState<FoodDetailPage> {
                             ),
                           ),
                         ),
-
-                        // Increase Button
                         Container(
                           decoration: BoxDecoration(
                             color: const Color(0xFFFF6B35),
@@ -413,10 +590,7 @@ class _FoodDetailPageState extends ConsumerState<FoodDetailPage> {
                             color: Colors.white,
                           ),
                         ),
-
                         const Spacer(),
-
-                        // Total Price
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
@@ -442,110 +616,12 @@ class _FoodDetailPageState extends ConsumerState<FoodDetailPage> {
 
                     const SizedBox(height: 32),
 
-                    // Add to Cart Button
+                    // ✅ Add to Cart Button — now calls _handleAddToCart
                     SizedBox(
                       width: double.infinity,
                       height: 60,
                       child: ElevatedButton(
-                        onPressed: () {
-                          // Create cart item
-                          final cartItem = CartItemEntity(
-                            foodId: food!.id,
-                            name: food!.name,
-                            image: food!.image,
-                            price: food!.price,
-                            quantity: quantity,
-                            restaurantId: food!.restaurantId,
-                            restaurantName:
-                                food!.restaurantName ?? 'Restaurant',
-                          );
-
-                          // Check if adding from different restaurant
-                          final currentCart = ref.read(cartViewModelProvider);
-                          if (currentCart.isNotEmpty &&
-                              currentCart.restaurantId != food!.restaurantId) {
-                            // Show dialog to replace cart
-                            showDialog(
-                              context: context,
-                              builder: (dialogContext) => AlertDialog(
-                                title: const Text('Replace cart items?'),
-                                content: Text(
-                                  'Your cart contains items from ${currentCart.restaurantName}. Do you want to discard them and add items from ${food!.restaurantName}?',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(dialogContext),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      ref
-                                          .read(cartViewModelProvider.notifier)
-                                          .replaceCart(cartItem);
-                                      Navigator.pop(dialogContext);
-
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'Added ${food!.name} x$quantity to cart',
-                                          ),
-                                          backgroundColor: Colors.green,
-                                          duration: const Duration(
-                                            seconds: 3,
-                                          ), // ✅ FIXED: 3 seconds
-                                          action: SnackBarAction(
-                                            label: 'View Cart',
-                                            textColor: Colors.white,
-                                            onPressed: () {
-                                              // Close food detail page
-                                              Navigator.pop(context);
-                                              // Switch to cart tab using global key
-                                              dashboardKey.currentState
-                                                  ?.switchToTab(1);
-                                            },
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: const Text(
-                                      'Replace',
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          } else {
-                            // Add to cart
-                            ref
-                                .read(cartViewModelProvider.notifier)
-                                .addItem(cartItem);
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Added ${food!.name} x$quantity to cart',
-                                ),
-                                backgroundColor: Colors.green,
-                                duration: const Duration(seconds: 2),
-                                action: SnackBarAction(
-                                  label: 'View Cart',
-                                  textColor: Colors.white,
-                                  onPressed: () {
-                                    // Navigate to cart tab
-                                    Navigator.pop(context); // Close food detail
-                                    DefaultTabController.of(
-                                      context,
-                                    ).animateTo(1);
-                                  },
-                                ),
-                              ),
-                            );
-                          }
-                        },
+                        onPressed: _handleAddToCart,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFF6B35),
                           foregroundColor: Colors.white,
