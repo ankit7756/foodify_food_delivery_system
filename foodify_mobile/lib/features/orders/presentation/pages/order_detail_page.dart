@@ -256,9 +256,6 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                 // Show action buttons only for active orders (existing code)
                 if (isCurrentOrder) _buildActionButtons(canCancel),
 
-                // ✅ Action Buttons (only for current/active orders)
-                if (isCurrentOrder) _buildActionButtons(canCancel),
-
                 const SizedBox(height: 40),
               ],
             ),

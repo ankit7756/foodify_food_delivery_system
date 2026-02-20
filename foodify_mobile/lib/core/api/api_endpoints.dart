@@ -26,4 +26,6 @@ class ApiEndpoints {
   static const String getOrderHistory = '/api/orders/history';
   static const String getOrderById = '/api/orders';
   static const String updateOrderStatus = '/api/orders';
+  static const String khaltiSendOTP = '/api/payment/khalti/send-otp';
+  static const String khaltiVerifyOTP = '/api/payment/khalti/verify-otp';
 }

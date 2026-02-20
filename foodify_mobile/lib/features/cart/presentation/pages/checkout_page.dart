@@ -5,6 +5,7 @@ import '../../../orders/presentation/view_model/orders_view_model.dart';
 import '../../../dashboard/presentation/pages/dashboard_screen.dart';
 import '../../../notifications/domain/entities/notification_entity.dart';
 import '../../../notifications/presentation/view_model/notification_view_model.dart';
+import '../../../payment/presentation/pages/khalti_payment_page.dart';
 
 class CheckoutPage extends ConsumerStatefulWidget {
   const CheckoutPage({super.key});
@@ -17,8 +18,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
   final _addressController = TextEditingController(
     text: 'Patan, Bagmati Province, Nepal',
   );
-  final _phoneController = TextEditingController(text: '9876543210');
-
+  final _phoneController = TextEditingController(text: '9800000001');
   String _paymentMethod = 'Cash on Delivery';
 
   @override
@@ -28,21 +28,9 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
     super.dispose();
   }
 
-  void _placeOrder() async {
+  Future<void> _createOrderAndFinish() async {
     final cartState = ref.read(cartViewModelProvider);
 
-    if (_addressController.text.trim().isEmpty ||
-        _phoneController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all required fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // Prepare order data
     final orderData = {
       'restaurantId': cartState.restaurantId,
       'restaurantName': cartState.restaurantName,
@@ -65,23 +53,11 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
       'paymentMethod': _paymentMethod,
     };
 
-    // Show loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-
-    // Create order
     final success = await ref
         .read(ordersViewModelProvider.notifier)
         .createOrder(orderData);
 
-    // Close loading
-    if (mounted) Navigator.pop(context);
-
     if (success) {
-      // ✅ Add notification for order placed
       await ref
           .read(notificationViewModelProvider.notifier)
           .addNotification(
@@ -91,10 +67,8 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
             type: NotificationType.order,
           );
 
-      // Clear cart
       ref.read(cartViewModelProvider.notifier).clearCart();
 
-      // Show success dialog
       if (mounted) {
         showDialog(
           context: context,
@@ -119,6 +93,22 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                 ),
                 const SizedBox(height: 8),
                 Text('Delivery to: ${_addressController.text}'),
+                if (_paymentMethod == 'Khalti') ...[
+                  const SizedBox(height: 8),
+                  const Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.green, size: 16),
+                      SizedBox(width: 6),
+                      Text(
+                        'Payment via Khalti successful',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
             actions: [
@@ -147,6 +137,51 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
     }
   }
 
+  void _placeOrder() async {
+    if (_addressController.text.trim().isEmpty ||
+        _phoneController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all required fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Khalti payment flow
+    if (_paymentMethod == 'Khalti') {
+      final cartState = ref.read(cartViewModelProvider);
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => KhaltiPaymentPage(
+            amount: cartState.grandTotal,
+            restaurantName: cartState.restaurantName ?? 'Restaurant',
+            onPaymentSuccess: () async {
+              // ✅ Close Khalti page first
+              if (mounted) Navigator.pop(context);
+              // ✅ Then create order directly, no extra loading dialog
+              await _createOrderAndFinish();
+            },
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Cash on Delivery or eSewa — direct
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    await _createOrderAndFinish();
+
+    if (mounted) Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final cartState = ref.watch(cartViewModelProvider);
@@ -170,7 +205,6 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Delivery Address
             const Text(
               'Delivery Address',
               style: TextStyle(
@@ -180,7 +214,6 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
               ),
             ),
             const SizedBox(height: 12),
-
             TextField(
               controller: _addressController,
               decoration: InputDecoration(
@@ -212,7 +245,6 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
 
             const SizedBox(height: 24),
 
-            // Phone Number
             const Text(
               'Phone Number',
               style: TextStyle(
@@ -222,7 +254,6 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
               ),
             ),
             const SizedBox(height: 12),
-
             TextField(
               controller: _phoneController,
               keyboardType: TextInputType.phone,
@@ -251,7 +282,6 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
 
             const SizedBox(height: 24),
 
-            // Payment Method
             const Text(
               'Payment Method',
               style: TextStyle(
@@ -265,6 +295,39 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
             _buildPaymentOption('Cash on Delivery', Icons.money),
             _buildPaymentOption('eSewa', Icons.account_balance_wallet),
             _buildPaymentOption('Khalti', Icons.payment),
+
+            if (_paymentMethod == 'Khalti') ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF5C2D91).withOpacity(0.07),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: const Color(0xFF5C2D91).withOpacity(0.3),
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Color(0xFF5C2D91),
+                      size: 18,
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'You will be redirected to Khalti payment screen to complete your payment.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF5C2D91),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             const SizedBox(height: 24),
 
@@ -294,7 +357,6 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
                   _buildSummaryRow('Items', '${cartState.items.length}'),
                   _buildSummaryRow('Total Quantity', '${cartState.itemCount}'),
                   _buildSummaryRow(
@@ -306,7 +368,6 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                     'Rs. ${cartState.deliveryFee.toStringAsFixed(0)}',
                   ),
                   const Divider(height: 24),
-
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -352,16 +413,21 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
             child: ElevatedButton(
               onPressed: _placeOrder,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF6B35),
+                backgroundColor: _paymentMethod == 'Khalti'
+                    ? const Color(0xFF5C2D91)
+                    : const Color(0xFFFF6B35),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
                 elevation: 0,
               ),
-              child: const Text(
-                'Place Order',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              child: Text(
+                _paymentMethod == 'Khalti' ? 'Pay with Khalti' : 'Place Order',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -381,7 +447,11 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF6B35) : Colors.grey[300]!,
+            color: isSelected
+                ? (_paymentMethod == 'Khalti'
+                      ? const Color(0xFF5C2D91)
+                      : const Color(0xFFFF6B35))
+                : Colors.grey[300]!,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -389,7 +459,11 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
           children: [
             Icon(
               icon,
-              color: isSelected ? const Color(0xFFFF6B35) : Colors.grey[600],
+              color: isSelected
+                  ? (_paymentMethod == 'Khalti'
+                        ? const Color(0xFF5C2D91)
+                        : const Color(0xFFFF6B35))
+                  : Colors.grey[600],
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -398,12 +472,21 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected ? const Color(0xFFFF6B35) : Colors.black87,
+                  color: isSelected
+                      ? (_paymentMethod == 'Khalti'
+                            ? const Color(0xFF5C2D91)
+                            : const Color(0xFFFF6B35))
+                      : Colors.black87,
                 ),
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check_circle, color: Color(0xFFFF6B35)),
+              Icon(
+                Icons.check_circle,
+                color: _paymentMethod == 'Khalti'
+                    ? const Color(0xFF5C2D91)
+                    : const Color(0xFFFF6B35),
+              ),
           ],
         ),
       ),

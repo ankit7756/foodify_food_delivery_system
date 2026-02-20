@@ -6,6 +6,7 @@ import '../view_model/profile_view_model.dart';
 import '../state/profile_state.dart';
 import '../../../notifications/domain/entities/notification_entity.dart';
 import '../../../notifications/presentation/view_model/notification_view_model.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
@@ -33,15 +34,179 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     }
   }
 
+  // Future<void> _pickImage() async {
+  //   final XFile? image = await _picker.pickImage(
+  //     source: ImageSource.gallery,
+  //     maxWidth: 800,
+  //     maxHeight: 800,
+  //     imageQuality: 85,
+  //   );
+  //   if (image != null) {
+  //     setState(() => _selectedImage = File(image.path));
+  //   }
+  // }
   Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 800,
-      maxHeight: 800,
-      imageQuality: 85,
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Change Profile Photo',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF6B35).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.camera_alt, color: Color(0xFFFF6B35)),
+              ),
+              title: const Text(
+                'Take a Photo',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: const Text('Use your camera'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF6B35).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.photo_library,
+                  color: Color(0xFFFF6B35),
+                ),
+              ),
+              title: const Text(
+                'Choose from Gallery',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: const Text('Pick from your photos'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
     );
-    if (image != null) {
-      setState(() => _selectedImage = File(image.path));
+
+    if (source == null) return;
+
+    // ✅ FIX: Determine correct permission
+    // Camera uses Permission.camera
+    // Gallery on Android 13+ uses Permission.photos
+    // Gallery on Android 12 and below uses Permission.storage
+    Permission permission;
+    if (source == ImageSource.camera) {
+      permission = Permission.camera;
+    } else {
+      // Check Android SDK version
+      if (await Permission.photos.status !=
+          PermissionStatus.permanentlyDenied) {
+        // Android 13+ supports Permission.photos (READ_MEDIA_IMAGES)
+        permission = Permission.photos;
+      } else {
+        // Android 12 and below uses storage
+        permission = Permission.storage;
+      }
+    }
+
+    PermissionStatus status = await permission.request();
+
+    // ✅ FIX: If photos permission fails, fallback to storage permission
+    if (status.isDenied && permission == Permission.photos) {
+      status = await Permission.storage.request();
+    }
+
+    if (status.isGranted || status.isLimited) {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+      if (image != null) {
+        setState(() => _selectedImage = File(image.path));
+      }
+    } else if (status.isPermanentlyDenied) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Row(
+              children: [
+                Icon(Icons.lock, color: Color(0xFFFF6B35)),
+                SizedBox(width: 8),
+                Text('Permission Required'),
+              ],
+            ),
+            content: Text(
+              source == ImageSource.camera
+                  ? 'Camera access was denied. Please enable it in your phone settings to take a profile photo.'
+                  : 'Photo access was denied. Please enable it in your phone settings to choose a profile photo.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  openAppSettings();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF6B35),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Open Settings'),
+              ),
+            ],
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              source == ImageSource.camera
+                  ? 'Camera permission is required to take a photo.'
+                  : 'Gallery permission is required to choose a photo.',
+            ),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Try Again',
+              textColor: Colors.white,
+              onPressed: _pickImage,
+            ),
+          ),
+        );
+      }
     }
   }
 

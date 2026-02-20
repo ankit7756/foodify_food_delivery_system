@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../auth/presentation/pages/login_screen.dart';
 import '../../../auth/presentation/view_model/auth_view_model.dart';
+import '../../../notifications/presentation/pages/notification_page.dart';
 import 'edit_profile_page.dart';
+import 'delivery_address_page.dart';
+import 'payment_methods_page.dart';
+import 'help_support_page.dart';
+import 'about_page.dart';
 import '../view_model/profile_view_model.dart';
 import '../state/profile_state.dart';
 
@@ -18,7 +22,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    // Load profile when page opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(profileViewModelProvider.notifier).loadProfile();
     });
@@ -26,7 +29,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
     await ref.read(authViewModelProvider.notifier).logoutUser();
-
     if (context.mounted) {
       Navigator.pushAndRemoveUntil(
         context,
@@ -36,7 +38,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
   }
 
-  // ✅ ADD: Manual refresh method
   Future<void> _refreshProfile() async {
     await ref.read(profileViewModelProvider.notifier).loadProfile();
   }
@@ -75,8 +76,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 ),
               )
             : SingleChildScrollView(
-                physics:
-                    const AlwaysScrollableScrollPhysics(), // ✅ For pull to refresh
+                physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
                   children: [
                     const SizedBox(height: 20),
@@ -130,7 +130,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
                           const SizedBox(height: 16),
 
-                          // Name
                           Text(
                             profileState.profile?.fullName ?? 'User Name',
                             style: const TextStyle(
@@ -141,7 +140,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
                           const SizedBox(height: 4),
 
-                          // Username
                           Text(
                             '@${profileState.profile?.username ?? 'username'}',
                             style: TextStyle(
@@ -152,7 +150,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
                           const SizedBox(height: 4),
 
-                          // Email
                           Text(
                             profileState.profile?.email ?? 'email@example.com',
                             style: TextStyle(
@@ -166,14 +163,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           // Edit Profile Button
                           ElevatedButton.icon(
                             onPressed: () async {
-                              // ✅ FIXED: Navigate and refresh on return
                               await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => const EditProfilePage(),
                                 ),
                               );
-                              // Refresh profile after returning from edit page
                               _refreshProfile();
                             },
                             icon: const Icon(Icons.edit),
@@ -200,61 +195,154 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Account section
+                          const Padding(
+                            padding: EdgeInsets.only(left: 4, bottom: 12),
+                            child: Text(
+                              'Account',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
                           _buildMenuItem(
                             Icons.location_on_outlined,
-                            'Delivery Address',
-                            () {},
+                            'Delivery Addresses',
+                            'Manage your saved addresses',
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const DeliveryAddressPage(),
+                              ),
+                            ),
                           ),
                           _buildMenuItem(
                             Icons.payment_outlined,
                             'Payment Methods',
-                            () {},
+                            'Manage your payment options',
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const PaymentMethodsPage(),
+                              ),
+                            ),
                           ),
                           _buildMenuItem(
                             Icons.notifications_outlined,
                             'Notifications',
-                            () {},
+                            'View your notifications',
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const NotificationPage(),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // Support section
+                          const Padding(
+                            padding: EdgeInsets.only(left: 4, bottom: 12),
+                            child: Text(
+                              'Support',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
                           ),
                           _buildMenuItem(
                             Icons.help_outline,
                             'Help & Support',
-                            () {},
-                          ),
-                          _buildMenuItem(Icons.info_outline, 'About', () {}),
-                          const SizedBox(height: 20),
-                          _buildMenuItem(Icons.logout, 'Logout', () {
-                            showDialog(
-                              context: context,
-                              builder: (dialogContext) => AlertDialog(
-                                title: const Text('Logout'),
-                                content: const Text(
-                                  'Are you sure you want to logout?',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(dialogContext),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(dialogContext);
-                                      _logout(context, ref);
-                                    },
-                                    child: const Text(
-                                      'Logout',
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                  ),
-                                ],
+                            'FAQs and contact us',
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const HelpSupportPage(),
                               ),
-                            );
-                          }, isLogout: true),
+                            ),
+                          ),
+                          _buildMenuItem(
+                            Icons.info_outline,
+                            'About Foodify',
+                            'Our story and mission',
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AboutPage(),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // Logout
+                          const Padding(
+                            padding: EdgeInsets.only(left: 4, bottom: 12),
+                            child: Text(
+                              'Session',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          _buildMenuItem(
+                            Icons.logout,
+                            'Logout',
+                            'Sign out of your account',
+                            () {
+                              showDialog(
+                                context: context,
+                                builder: (dialogContext) => AlertDialog(
+                                  title: const Text('Logout'),
+                                  content: const Text(
+                                    'Are you sure you want to logout?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(dialogContext),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(dialogContext);
+                                        _logout(context, ref);
+                                      },
+                                      child: const Text(
+                                        'Logout',
+                                        style: TextStyle(color: Colors.red),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            isLogout: true,
+                          ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+
+                    const SizedBox(height: 32),
+
+                    // App version footer
+                    Text(
+                      'Foodify v1.0.0',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                    ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -265,39 +353,56 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Widget _buildMenuItem(
     IconData icon,
     String title,
+    String subtitle,
     VoidCallback onTap, {
     bool isLogout = false,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: ListTile(
         onTap: onTap,
-        leading: Icon(
-          icon,
-          color: isLogout ? Colors.red : const Color(0xFFFF6B35),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isLogout
+                ? Colors.red.withOpacity(0.1)
+                : const Color(0xFFFF6B35).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            color: isLogout ? Colors.red : const Color(0xFFFF6B35),
+            size: 22,
+          ),
         ),
         title: Text(
           title,
           style: TextStyle(
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
             color: isLogout ? Colors.red : Colors.black87,
           ),
         ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+        ),
         trailing: Icon(
           Icons.arrow_forward_ios,
-          size: 16,
-          color: Colors.grey[400],
+          size: 14,
+          color: Colors.grey[300],
         ),
       ),
     );
