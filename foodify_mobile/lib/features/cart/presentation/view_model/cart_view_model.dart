@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/services/hive/hive_service.dart';
+import '../../data/models/cart_item_hive_model.dart';
 import '../../domain/entities/cart_item_entity.dart';
 import '../state/cart_state.dart';
 
@@ -9,86 +11,90 @@ final cartViewModelProvider = NotifierProvider<CartViewModel, CartState>(
 class CartViewModel extends Notifier<CartState> {
   @override
   CartState build() {
+    try {
+      final cached = HiveService.getCachedCartItems();
+      if (cached.isNotEmpty) {
+        final items = CartItemHiveModel.toEntityList(cached);
+        return CartState(items: items);
+      }
+    } catch (_) {}
     return const CartState();
   }
 
-  // Add item to cart
+  Future<void> _saveCartToHive() async {
+    try {
+      final models = state.items
+          .map((item) => CartItemHiveModel.fromEntity(item))
+          .toList();
+      await HiveService.saveCartItems(models);
+    } catch (_) {}
+  }
+
   void addItem(CartItemEntity item) {
     final currentItems = List<CartItemEntity>.from(state.items);
-
-    // Check if item already exists
     final existingIndex = currentItems.indexWhere(
       (cartItem) => cartItem.foodId == item.foodId,
     );
 
     if (existingIndex != -1) {
-      // Item exists, increase quantity
       currentItems[existingIndex] = currentItems[existingIndex].copyWith(
         quantity: currentItems[existingIndex].quantity + item.quantity,
       );
     } else {
-      // Check if adding from different restaurant
       if (currentItems.isNotEmpty &&
           currentItems.first.restaurantId != item.restaurantId) {
-        // Different restaurant - will handle in UI
         return;
       }
-      // New item, add to cart
       currentItems.add(item);
     }
 
     state = state.copyWith(items: currentItems);
+    _saveCartToHive();
   }
 
-  // Remove item from cart
   void removeItem(String foodId) {
     final currentItems = List<CartItemEntity>.from(state.items);
     currentItems.removeWhere((item) => item.foodId == foodId);
     state = state.copyWith(items: currentItems);
+    _saveCartToHive();
   }
 
-  // Increase item quantity
   void increaseQuantity(String foodId) {
     final currentItems = List<CartItemEntity>.from(state.items);
     final index = currentItems.indexWhere((item) => item.foodId == foodId);
-
     if (index != -1) {
       currentItems[index] = currentItems[index].copyWith(
         quantity: currentItems[index].quantity + 1,
       );
       state = state.copyWith(items: currentItems);
+      _saveCartToHive();
     }
   }
 
-  // Decrease item quantity
   void decreaseQuantity(String foodId) {
     final currentItems = List<CartItemEntity>.from(state.items);
     final index = currentItems.indexWhere((item) => item.foodId == foodId);
-
     if (index != -1) {
       if (currentItems[index].quantity > 1) {
         currentItems[index] = currentItems[index].copyWith(
           quantity: currentItems[index].quantity - 1,
         );
         state = state.copyWith(items: currentItems);
+        _saveCartToHive();
       } else {
-        // If quantity is 1, remove item
         removeItem(foodId);
       }
     }
   }
 
-  // Clear entire cart
   void clearCart() {
     state = const CartState();
+    HiveService.clearCart();
   }
 
-  // Check if item is in cart
-  bool isInCart(String foodId) {
-    return state.items.any((item) => item.foodId == foodId);
-  }
+  bool isInCart(String foodId) =>
+      state.items.any((item) => item.foodId == foodId);
 
-  // Get item quantity
   int getItemQuantity(String foodId) {
     final item = state.items.firstWhere(
       (item) => item.foodId == foodId,
@@ -105,8 +111,8 @@ class CartViewModel extends Notifier<CartState> {
     return item.quantity;
   }
 
-  // Replace cart with items from different restaurant
   void replaceCart(CartItemEntity newItem) {
     state = CartState(items: [newItem]);
+    _saveCartToHive();
   }
 }

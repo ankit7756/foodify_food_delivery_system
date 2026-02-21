@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/core_providers.dart';
 import '../../data/datasources/remote/orders_remote_datasource.dart';
+import '../../data/datasources/local/orders_local_datasource.dart';
 import '../../domain/repositories/orders_repository_impl.dart';
 import '../../domain/repositories/orders_repository.dart';
 import '../../domain/usecases/create_order_usecase.dart';
@@ -9,16 +10,24 @@ import '../../domain/usecases/get_order_history_usecase.dart';
 import '../../domain/usecases/get_order_detail_usecase.dart';
 import '../../domain/usecases/update_order_status_usecase.dart';
 
-// Data Source
+// Data Sources
 final ordersRemoteDataSourceProvider = Provider<OrdersRemoteDataSource>((ref) {
   final dioClient = ref.read(dioClientProvider);
   return OrdersRemoteDataSource(dioClient: dioClient);
 });
 
+final ordersLocalDataSourceProvider = Provider<OrdersLocalDataSource>((ref) {
+  return OrdersLocalDataSource();
+});
+
 // Repository
 final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
   final remoteDataSource = ref.read(ordersRemoteDataSourceProvider);
-  return OrdersRepositoryImpl(remoteDataSource: remoteDataSource);
+  final localDataSource = ref.read(ordersLocalDataSourceProvider);
+  return OrdersRepositoryImpl(
+    remoteDataSource: remoteDataSource,
+    localDataSource: localDataSource,
+  );
 });
 
 // Use Cases

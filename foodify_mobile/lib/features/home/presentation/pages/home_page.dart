@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../view_model/home_view_model.dart';
 import '../state/home_state.dart';
 import '../widgets/restaurant_card.dart';
@@ -20,6 +22,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _selectedCategory = 'All';
+  bool _isOffline = false;
+  late StreamSubscription _connectivitySubscription;
 
   final List<Map<String, String>> _categories = [
     {'emoji': '🍽️', 'label': 'All'},
@@ -37,6 +41,14 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   void initState() {
     super.initState();
+    _checkConnectivity();
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
+      result,
+    ) {
+      if (mounted) {
+        setState(() => _isOffline = result == ConnectivityResult.none);
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(homeViewModelProvider.notifier).loadHomeData();
     });
@@ -45,10 +57,28 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   void dispose() {
     _searchController.dispose();
+    _connectivitySubscription.cancel();
     super.dispose();
   }
 
+  Future<void> _checkConnectivity() async {
+    final result = await Connectivity().checkConnectivity();
+    if (mounted) {
+      setState(() => _isOffline = result == ConnectivityResult.none);
+    }
+  }
+
   Future<void> _refreshData() async {
+    if (_isOffline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot refresh — no internet connection'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     await ref.read(homeViewModelProvider.notifier).loadHomeData();
   }
 
@@ -56,7 +86,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final homeState = ref.watch(homeViewModelProvider);
 
-    // Filter logic
     final allFoods = homeState.popularFoods;
     final allRestaurants = homeState.restaurants;
 
@@ -91,96 +120,109 @@ class _HomePageState extends ConsumerState<HomePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
-        child: homeState.status == HomeStatus.loading
-            ? const Center(child: CircularProgressIndicator())
-            : homeState.status == HomeStatus.error
-            ? Center(
-                child: Column(
+        child: Column(
+          children: [
+            // ✅ Offline banner — always visible at very top
+            if (_isOffline)
+              Container(
+                width: double.infinity,
+                color: Colors.red,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 60,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
+                    Icon(Icons.wifi_off, color: Colors.white, size: 16),
+                    SizedBox(width: 8),
                     Text(
-                      homeState.errorMessage ?? 'Something went wrong',
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _refreshData,
-                      child: const Text('Retry'),
+                      'You are offline — showing cached data',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
-              )
-            : RefreshIndicator(
-                onRefresh: _refreshData,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ✅ Header with gradient
-                      _buildHeader(),
+              ),
 
-                      Padding(
-                        padding: const EdgeInsets.all(20),
+            // ✅ Rest of the page
+            Expanded(
+              child: homeState.status == HomeStatus.loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : homeState.status == HomeStatus.error
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 60,
+                            color: Colors.red,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            homeState.errorMessage ?? 'Something went wrong',
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _refreshData,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _refreshData,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // ✅ Search bar
-                            _buildSearchBar(),
-
-                            const SizedBox(height: 20),
-
-                            // ✅ Categories
-                            _buildCategories(),
-
-                            const SizedBox(height: 20),
-
-                            // ✅ Show search results if searching
-                            if (isSearching) ...[
-                              _buildSearchResults(
-                                filteredFoods,
-                                filteredRestaurants,
+                            _buildHeader(),
+                            Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildSearchBar(),
+                                  const SizedBox(height: 20),
+                                  _buildCategories(),
+                                  const SizedBox(height: 20),
+                                  if (isSearching) ...[
+                                    _buildSearchResults(
+                                      filteredFoods,
+                                      filteredRestaurants,
+                                    ),
+                                  ] else ...[
+                                    _buildPromoBanners(),
+                                    const SizedBox(height: 24),
+                                    _buildHotCombos(homeState),
+                                    const SizedBox(height: 24),
+                                    _buildPopularFoods(
+                                      homeState,
+                                      filteredFoods,
+                                    ),
+                                    const SizedBox(height: 24),
+                                    _buildTopRatedRestaurants(
+                                      homeState,
+                                      filteredRestaurants,
+                                    ),
+                                  ],
+                                ],
                               ),
-                            ] else ...[
-                              // ✅ Promo banners
-                              _buildPromoBanners(),
-
-                              const SizedBox(height: 24),
-
-                              // ✅ Hot Combos section
-                              _buildHotCombos(homeState),
-
-                              const SizedBox(height: 24),
-
-                              // ✅ Popular Foods
-                              _buildPopularFoods(homeState, filteredFoods),
-
-                              const SizedBox(height: 24),
-
-                              // ✅ Top Rated Restaurants
-                              _buildTopRatedRestaurants(
-                                homeState,
-                                filteredRestaurants,
-                              ),
-                            ],
+                            ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // ✅ Gradient header
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -289,7 +331,6 @@ class _HomePageState extends ConsumerState<HomePage> {
             ],
           ),
           const SizedBox(height: 16),
-          // Quick stats row
           Row(
             children: [
               Expanded(
@@ -356,7 +397,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  // ✅ Search bar
   Widget _buildSearchBar() {
     return Container(
       decoration: BoxDecoration(
@@ -393,7 +433,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  // ✅ Categories
   Widget _buildCategories() {
     return SizedBox(
       height: 44,
@@ -443,7 +482,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  // ✅ Promo banners
   Widget _buildPromoBanners() {
     final promos = [
       {
@@ -567,7 +605,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  // ✅ Hot Combos
   Widget _buildHotCombos(HomeState homeState) {
     final comboFoods = homeState.popularFoods
         .where(
@@ -735,7 +772,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  // ✅ Popular Foods
   Widget _buildPopularFoods(HomeState homeState, List filteredFoods) {
     final foods =
         filteredFoods.isEmpty &&
@@ -787,7 +823,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  // ✅ Top Rated Restaurants
   Widget _buildTopRatedRestaurants(
     HomeState homeState,
     List filteredRestaurants,
@@ -852,7 +887,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  // ✅ Search results
   Widget _buildSearchResults(List filteredFoods, List filteredRestaurants) {
     final hasResults =
         filteredFoods.isNotEmpty || filteredRestaurants.isNotEmpty;
@@ -887,7 +921,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Results count
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
@@ -903,10 +936,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
           ),
         ),
-
         const SizedBox(height: 20),
-
-        // Food results
         if (filteredFoods.isNotEmpty) ...[
           Text(
             'Foods (${filteredFoods.length})',
@@ -929,8 +959,6 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
           const SizedBox(height: 20),
         ],
-
-        // Restaurant results
         if (filteredRestaurants.isNotEmpty) ...[
           Text(
             'Restaurants (${filteredRestaurants.length})',

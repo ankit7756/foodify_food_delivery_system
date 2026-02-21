@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../domain/entities/notification_entity.dart';
 import '../view_model/notification_view_model.dart';
 
@@ -12,13 +14,36 @@ class NotificationPage extends ConsumerStatefulWidget {
 }
 
 class _NotificationPageState extends ConsumerState<NotificationPage> {
+  bool _isOffline = false;
+  late StreamSubscription _connectivitySubscription;
+
   @override
   void initState() {
     super.initState();
-    // Mark all as read when page opens
+    _checkConnectivity();
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
+      result,
+    ) {
+      if (mounted) {
+        setState(() => _isOffline = result == ConnectivityResult.none);
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(notificationViewModelProvider.notifier).markAllAsRead();
     });
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checkConnectivity() async {
+    final result = await Connectivity().checkConnectivity();
+    if (mounted) {
+      setState(() => _isOffline = result == ConnectivityResult.none);
+    }
   }
 
   @override
@@ -77,23 +102,52 @@ class _NotificationPageState extends ConsumerState<NotificationPage> {
             ),
         ],
       ),
-      body: allNotifications.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: allNotifications.length,
-              itemBuilder: (context, index) {
-                final notification = allNotifications[index];
-                return _buildNotificationCard(notification);
-              },
+      body: Column(
+        children: [
+          // ✅ Offline banner
+          if (_isOffline)
+            Container(
+              width: double.infinity,
+              color: Colors.orange,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.wifi_off, color: Colors.white, size: 16),
+                  SizedBox(width: 8),
+                  Text(
+                    'Offline — showing saved notifications',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
+
+          // ✅ Notification list
+          Expanded(
+            child: allNotifications.isEmpty
+                ? _buildEmptyState()
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: allNotifications.length,
+                    itemBuilder: (context, index) {
+                      final notification = allNotifications[index];
+                      return _buildNotificationCard(notification);
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildNotificationCard(NotificationEntity notification) {
     return Dismissible(
       key: Key(notification.id),
-      // Only non-promo notifications can be dismissed
       direction: notification.isPromo
           ? DismissDirection.none
           : DismissDirection.endToStart,
