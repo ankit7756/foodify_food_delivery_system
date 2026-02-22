@@ -68,7 +68,7 @@ class AuthViewModel extends Notifier<AuthState> {
       ),
       (_) => state = state.copyWith(
         status: AuthStatus.unauthenticated,
-        user: null,
+        clearUser: true,
         errorMessage: null,
       ),
     );

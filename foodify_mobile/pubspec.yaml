@@ -49,7 +49,8 @@ dev_dependencies:
   riverpod_generator: ^3.0.0-dev.11
 
    # Testing
-  mockito: ^5.4.4
+  mocktail: ^1.0.4
+
   
 flutter:
   uses-material-design: true

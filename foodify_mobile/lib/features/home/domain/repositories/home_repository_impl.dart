@@ -117,6 +117,11 @@ class HomeRepositoryImpl implements HomeRepository {
     try {
       if (await _isOnline()) {
         final foods = await remoteDataSource.getFoodsByRestaurant(restaurantId);
+        final existingCached = await localDataSource.getCachedFoods();
+        final otherFoods = existingCached
+            .where((f) => f.restaurantId != restaurantId)
+            .toList();
+        await localDataSource.cacheFoods([...otherFoods, ...foods]);
         return Right(foods);
       } else {
         final cached = await localDataSource.getCachedFoods();
