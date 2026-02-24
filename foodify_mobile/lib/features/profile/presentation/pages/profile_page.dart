@@ -10,6 +10,7 @@ import 'help_support_page.dart';
 import 'about_page.dart';
 import '../view_model/profile_view_model.dart';
 import '../state/profile_state.dart';
+import 'my_reviews_page.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -229,6 +230,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => const PaymentMethodsPage(),
+                              ),
+                            ),
+                          ),
+                          _buildMenuItem(
+                            Icons.rate_review_outlined,
+                            'My Reviews',
+                            'See all your food reviews',
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const MyReviewsPage(),
                               ),
                             ),
                           ),
