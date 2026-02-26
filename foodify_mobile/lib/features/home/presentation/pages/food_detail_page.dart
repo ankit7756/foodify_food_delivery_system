@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../domain/entities/food_entity.dart';
 import '../providers/home_providers.dart';
 import '../../../cart/domain/entities/cart_item_entity.dart';
@@ -509,17 +510,29 @@ class _FoodDetailPageState extends ConsumerState<FoodDetailPage> {
                             if (food!.restaurantImage != null)
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  food!.restaurantImage!,
+                                child: CachedNetworkImage(
+                                  imageUrl: food!.restaurantImage!,
                                   width: 50,
                                   height: 50,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Container(
+                                  placeholder: (context, url) => Container(
                                     width: 50,
                                     height: 50,
                                     color: Colors.grey[300],
-                                    child: const Icon(Icons.restaurant),
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Color(0xFFFF6B35),
+                                      ),
+                                    ),
                                   ),
+                                  errorWidget: (context, url, error) =>
+                                      Container(
+                                        width: 50,
+                                        height: 50,
+                                        color: Colors.grey[300],
+                                        child: const Icon(Icons.restaurant),
+                                      ),
                                 ),
                               ),
                             const SizedBox(width: 12),

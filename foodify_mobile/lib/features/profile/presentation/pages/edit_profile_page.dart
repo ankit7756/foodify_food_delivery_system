@@ -7,6 +7,7 @@ import '../state/profile_state.dart';
 import '../../../notifications/domain/entities/notification_entity.dart';
 import '../../../notifications/presentation/view_model/notification_view_model.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
@@ -305,16 +306,20 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                           )
                         : profileState.profile?.profileImage != null
                         ? ClipOval(
-                            child: Image.network(
-                              profileState.profile!.profileImage!,
+                            child: CachedNetworkImage(
+                              imageUrl: profileState.profile!.profileImage!,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(
-                                  Icons.person,
-                                  size: 60,
+                              placeholder: (context, url) => const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
                                   color: Color(0xFFFF6B35),
-                                );
-                              },
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => const Icon(
+                                Icons.person,
+                                size: 60,
+                                color: Color(0xFFFF6B35),
+                              ),
                             ),
                           )
                         : const Icon(

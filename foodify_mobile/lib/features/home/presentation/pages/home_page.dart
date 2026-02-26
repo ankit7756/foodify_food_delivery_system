@@ -10,6 +10,7 @@ import '../widgets/category_chip.dart';
 import '../../../notifications/presentation/pages/notification_page.dart';
 import '../../../notifications/presentation/view_model/notification_view_model.dart';
 import '../pages/restaurant_detail_page.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -678,12 +679,22 @@ class _HomePageState extends ConsumerState<HomePage> {
                             topLeft: Radius.circular(16),
                             topRight: Radius.circular(16),
                           ),
-                          child: Image.network(
-                            food.image,
+                          child: CachedNetworkImage(
+                            imageUrl: food.image,
                             height: 110,
                             width: double.infinity,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
+                            placeholder: (context, url) => Container(
+                              height: 110,
+                              color: Colors.grey[200],
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFFFF6B35),
+                                ),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Container(
                               height: 110,
                               color: Colors.grey[200],
                               child: const Icon(Icons.fastfood, size: 40),

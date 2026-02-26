@@ -4,6 +4,7 @@ import '../../domain/entities/restaurant_entity.dart';
 import '../../domain/entities/food_entity.dart';
 import '../providers/home_providers.dart';
 import '../widgets/food_card.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class RestaurantDetailPage extends ConsumerStatefulWidget {
   final RestaurantEntity restaurant;
@@ -76,15 +77,22 @@ class _RestaurantDetailPageState extends ConsumerState<RestaurantDetailPage> {
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
-              background: Image.network(
-                widget.restaurant.image,
+              background: CachedNetworkImage(
+                imageUrl: widget.restaurant.image,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.restaurant, size: 80),
-                  );
-                },
+                placeholder: (context, url) => Container(
+                  color: Colors.grey[300],
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFFFF6B35),
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.restaurant, size: 80),
+                ),
               ),
             ),
           ),

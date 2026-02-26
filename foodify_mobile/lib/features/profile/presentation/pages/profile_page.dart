@@ -11,6 +11,7 @@ import 'about_page.dart';
 import '../view_model/profile_view_model.dart';
 import '../state/profile_state.dart';
 import 'my_reviews_page.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -100,26 +101,23 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             ),
                             child: profileState.profile?.profileImage != null
                                 ? ClipOval(
-                                    child: Image.network(
-                                      profileState.profile!.profileImage!,
+                                    child: CachedNetworkImage(
+                                      imageUrl:
+                                          profileState.profile!.profileImage!,
                                       fit: BoxFit.cover,
-                                      loadingBuilder:
-                                          (context, child, loadingProgress) {
-                                            if (loadingProgress == null)
-                                              return child;
-                                            return const Center(
-                                              child:
-                                                  CircularProgressIndicator(),
-                                            );
-                                          },
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                            return const Icon(
-                                              Icons.person,
-                                              size: 60,
+                                      placeholder: (context, url) =>
+                                          const Center(
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
                                               color: Color(0xFFFF6B35),
-                                            );
-                                          },
+                                            ),
+                                          ),
+                                      errorWidget: (context, url, error) =>
+                                          const Icon(
+                                            Icons.person,
+                                            size: 60,
+                                            color: Color(0xFFFF6B35),
+                                          ),
                                     ),
                                   )
                                 : const Icon(

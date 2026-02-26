@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class FoodCard extends StatelessWidget {
   final String name;
@@ -47,16 +48,20 @@ class FoodCard extends StatelessWidget {
               ),
               child: Center(
                 child: imageUrl != null
-                    ? Image.network(
-                        imageUrl!,
+                    ? CachedNetworkImage(
+                        imageUrl: imageUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(
-                            Icons.fastfood,
-                            size: 48,
-                            color: Colors.grey[400],
-                          );
-                        },
+                        placeholder: (context, url) => const Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFFFF6B35),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Icon(
+                          Icons.fastfood,
+                          size: 48,
+                          color: Colors.grey[400],
+                        ),
                       )
                     : Icon(Icons.fastfood, size: 48, color: Colors.grey[400]),
               ),

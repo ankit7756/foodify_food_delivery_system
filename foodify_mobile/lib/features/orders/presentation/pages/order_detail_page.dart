@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:foodify_food_delivery_system/features/orders/data/local/review_local_storage.dart';
 import 'package:foodify_food_delivery_system/features/orders/presentation/pages/review_page.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../domain/entities/order_entity.dart';
 import '../providers/orders_providers.dart';
 import '../view_model/orders_view_model.dart';
@@ -810,12 +811,23 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              item.image,
+            child: CachedNetworkImage(
+              imageUrl: item.image,
               width: 60,
               height: 60,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              placeholder: (context, url) => Container(
+                width: 60,
+                height: 60,
+                color: Colors.grey[300],
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFFFF6B35),
+                  ),
+                ),
+              ),
+              errorWidget: (context, url, error) => Container(
                 width: 60,
                 height: 60,
                 color: Colors.grey[300],

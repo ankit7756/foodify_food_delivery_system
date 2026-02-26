@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/restaurant_entity.dart';
 import '../pages/restaurant_detail_page.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class RestaurantCard extends StatelessWidget {
   final RestaurantEntity restaurant;
@@ -40,18 +41,26 @@ class RestaurantCard extends StatelessWidget {
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
               ),
-              child: Image.network(
-                restaurant.image,
+              child: CachedNetworkImage(
+                imageUrl: restaurant.image,
                 height: 160,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 160,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.restaurant, size: 50),
-                  );
-                },
+                placeholder: (context, url) => Container(
+                  height: 160,
+                  color: Colors.grey[300],
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFFFF6B35),
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  height: 160,
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.restaurant, size: 50),
+                ),
               ),
             ),
 

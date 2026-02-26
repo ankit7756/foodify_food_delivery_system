@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/cart_item_entity.dart';
 import '../view_model/cart_view_model.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class CartItemCard extends ConsumerWidget {
   final CartItemEntity item;
@@ -29,19 +30,28 @@ class CartItemCard extends ConsumerWidget {
           // Food Image
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              item.image,
+            child: CachedNetworkImage(
+              imageUrl: item.image,
               width: 80,
               height: 80,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 80,
-                  height: 80,
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.fastfood, size: 40),
-                );
-              },
+              placeholder: (context, url) => Container(
+                width: 80,
+                height: 80,
+                color: Colors.grey[300],
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFFFF6B35),
+                  ),
+                ),
+              ),
+              errorWidget: (context, url, error) => Container(
+                width: 80,
+                height: 80,
+                color: Colors.grey[300],
+                child: const Icon(Icons.fastfood, size: 40),
+              ),
             ),
           ),
 

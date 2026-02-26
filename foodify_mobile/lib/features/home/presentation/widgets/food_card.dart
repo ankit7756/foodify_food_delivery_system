@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/food_entity.dart';
 import '../pages/food_detail_page.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class FoodCard extends StatelessWidget {
   final FoodEntity food;
@@ -39,18 +40,26 @@ class FoodCard extends StatelessWidget {
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
               ),
-              child: Image.network(
-                food.image,
+              child: CachedNetworkImage(
+                imageUrl: food.image,
                 height: 120,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 120,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.fastfood, size: 40),
-                  );
-                },
+                placeholder: (context, url) => Container(
+                  height: 120,
+                  color: Colors.grey[300],
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFFFF6B35),
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  height: 120,
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.fastfood, size: 40),
+                ),
               ),
             ),
 
